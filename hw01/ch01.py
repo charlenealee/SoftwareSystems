@@ -50,9 +50,13 @@ class Controller:
 
         kp: proportional gain
         ki: integral gain
+		kd: derivative 
         """
-        self.kp, self.ki = kp, ki
         self.i = 0       # Cumulative error ("integral")
+		self.old_error= 0
+
+
+	
 
     def work( self, e ):
         """Computes the number of jobs to be added to the ready queue.
@@ -62,8 +66,14 @@ class Controller:
         returns: float number of jobs
         """
         self.i += e
+		
 
-        return self.kp*e + self.ki*self.i
+        temp= self.kp*e + self.ki*self.i + self.kd*(e-self.old_error)
+		self.old_error = e  
+		
+		return temp 
+
+        self.kp, self.ki, self.kd = kp, ki, kd
 
 # ============================================================
 
@@ -77,9 +87,7 @@ def closed_loop( c, p, tm=5000 ):
     returns: tuple of sequences (times, targets, errors)
     """
     def setpoint( t ):
-        if t < 100: return 0
-        if t < 300: return 50
-        return 10
+        return t #setting to r 
     
     y = 0
     res = []
@@ -88,6 +96,7 @@ def closed_loop( c, p, tm=5000 ):
         e = r - y
         u = c.work(e)
         y = p.work(u)
+		
 
         #print t, r, e, u, y
         res.append((t, r, e, u, y))
@@ -95,8 +104,7 @@ def closed_loop( c, p, tm=5000 ):
     return zip(*res)
 
 # ============================================================
-
-c = Controller( 1.25, 0.01 )
+c = Controller( 1.25, 0)
 p = Buffer( 50, 10 )
 
 # run the simulation
